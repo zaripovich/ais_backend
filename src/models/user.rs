@@ -1,11 +1,12 @@
 use crate::db::establish_connection;
-use crate::result::MResult;
 use crate::schema::*;
 use diesel::prelude::*;
 use diesel::result::Error;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Selectable, Queryable, AsChangeset, Debug)]
+use sqlx;
+
+#[derive(Serialize, Selectable, Queryable, AsChangeset, Debug, Clone, sqlx::FromRow)]
 #[diesel(table_name = users)]
 pub struct User {
     pub id: i32,
@@ -23,45 +24,31 @@ pub struct NewUser {
 }
 
 impl NewUser {
-    pub fn add_into_db(&self) -> bool {
+    pub fn add_into_db(&self) -> Result<usize, Error> {
         let connection = &mut establish_connection();
-        let result = diesel::insert_into(users::table)
+        diesel::insert_into(users::table)
             .values(self)
-            .execute(connection);
-        match result {
-            Ok(result) => return result > 0,
-            Err(_) => return false,
-        }
+            .execute(connection)
     }
 }
 
 impl User {
-    pub fn get_from_db(_id: i32) -> Result<User, Error> {
+    pub fn get_by_id_from_db(_id: i32) -> Result<User, Error> {
         use crate::schema::users::dsl::*;
         let connection = &mut establish_connection();
-        return users.filter(id.eq(_id)).first(connection);
+        users.filter(id.eq(_id)).first(connection)
     }
 
-    pub fn update_into_db(&self) -> MResult<String> {
+    pub fn get_by_username_from_db(_username: String) -> Result<User, Error> {
+        use crate::schema::users::dsl::*;
+        let connection = &mut establish_connection();
+        users.filter(username.eq(_username)).first(connection)
+    }
+
+    pub fn update_into_db(&self) -> Result<usize, Error> {
         use crate::schema::users::dsl::*;
         let connection = &mut establish_connection();
         let response = users.filter(id.eq(self.id));
-        let result = diesel::update(response).set(self).execute(connection);
-        match result {
-            Ok(_) => {
-                return MResult {
-                    status: 200,
-                    description: Some("Успешно".to_string()),
-                    value: None,
-                }
-            }
-            Err(err) => {
-                return MResult {
-                    status: 401,
-                    description: Some(err.to_string()),
-                    value: None,
-                }
-            }
-        }
+        diesel::update(response).set(self).execute(connection)
     }
 }

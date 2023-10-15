@@ -12,7 +12,7 @@ pub async fn get_role(Json(payload): Json<SearchParametrs>) -> (StatusCode, Json
     match result {
         Ok(role) => {
             let r = MResult {
-                status: 200,
+                status: StatusCode::OK.as_u16(),
                 description: None,
                 value: Some(role),
             };
@@ -20,11 +20,11 @@ pub async fn get_role(Json(payload): Json<SearchParametrs>) -> (StatusCode, Json
         }
         Err(err) => {
             let r = MResult {
-                status: 400,
+                status: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
                 description: Some(err.to_string()),
                 value: None,
             };
-            (StatusCode::OK.into(), Json(r))
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(r))
         }
     }
 }

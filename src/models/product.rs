@@ -4,43 +4,42 @@ use diesel::prelude::*;
 use diesel::result::Error;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Selectable, Queryable, AsChangeset, Debug)]
-#[diesel(table_name = roles)]
-pub struct Role {
+#[derive(Serialize, Selectable, Queryable, AsChangeset, Debug, Clone)]
+#[diesel(table_name = products)]
+pub struct Product {
+    #[serde(skip_serializing)]
     pub id: i32,
     pub name: String,
-}
-#[derive(Deserialize, Insertable, Queryable, Debug)]
-#[diesel(table_name = roles)]
-pub struct NewRole {
-    pub name: String,
+    pub price: i32,
 }
 
-impl NewRole {
+#[derive(Deserialize, Insertable, Queryable, Debug)]
+#[diesel(table_name = products)]
+pub struct NewProduct {
+    pub name: String,
+    pub price: i32,
+}
+
+impl NewProduct {
     pub fn add_into_db(&self) -> Result<usize, Error> {
         let connection = &mut establish_connection();
-        diesel::insert_into(roles::table)
+        diesel::insert_into(products::table)
             .values(self)
             .execute(connection)
     }
 }
 
-impl Role {
-    pub fn get_from_db(_id: Option<i32>, _name: Option<String>) -> Result<Role, Error> {
-        use crate::schema::roles::dsl::*;
+impl Product {
+    pub fn get_by_id_from_db(_id: i32) -> Result<Product, Error> {
+        use crate::schema::products::dsl::*;
         let connection = &mut establish_connection();
-        return roles
-            .filter(
-                id.eq(_id.unwrap_or(-1))
-                    .or(name.eq(_name.unwrap_or("".to_string()))),
-            )
-            .first(connection);
+        products.filter(id.eq(_id)).first(connection)
     }
 
     pub fn update_into_db(&self) -> Result<usize, Error> {
-        use crate::schema::roles::dsl::*;
+        use crate::schema::products::dsl::*;
         let connection = &mut establish_connection();
-        let response = roles.filter(id.eq(self.id));
+        let response = products.filter(id.eq(self.id));
         diesel::update(response).set(self).execute(connection)
     }
 }

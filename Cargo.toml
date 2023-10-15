@@ -6,6 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+sqlx = { version = "0.6.3", features = ["postgres"]}
+rand = { version = "0.8.5", features = ["min_const_gen"]}
+axum-login = { version = "0.6.0", features = ["postgres", "sqlx"]}
 axum = "0.6.20"
 serde = { version = "1.0.152", features = ["derive"] }
 dotenvy = "0.15"
