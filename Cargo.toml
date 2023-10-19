@@ -9,9 +9,10 @@ edition = "2021"
 sqlx = { version = "0.6.3", features = ["postgres"]}
 rand = { version = "0.8.5", features = ["min_const_gen"]}
 axum-login = { version = "0.6.0", features = ["postgres", "sqlx"]}
+axum_session = { version = "0.6.0", features= ["redis-db"]}
 axum = "0.6.20"
 serde = { version = "1.0.152", features = ["derive"] }
 dotenvy = "0.15"
 rust-crypto = "0.2.36"
-diesel = { version = "2.0.0", features = ["postgres","chrono","uuid"] }
+diesel = { version = "2.0.0", features = ["postgres","chrono"] }
 tokio = { version = "1.32.0", features = ["full"] }

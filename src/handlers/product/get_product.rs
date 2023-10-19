@@ -1,15 +1,8 @@
 use crate::{models::product::Product, result::MResult};
-use axum::{http::StatusCode, Json};
-use serde::Deserialize;
-#[derive(Deserialize)]
-pub struct SearchParametrs {
-    pub id: i32,
-}
+use axum::{extract::Path, http::StatusCode, Json};
 
-pub async fn get_product(
-    Json(payload): Json<SearchParametrs>,
-) -> (StatusCode, Json<MResult<Product>>) {
-    let result = Product::get_by_id_from_db(payload.id);
+pub async fn get_product(Path(product_id): Path<i32>) -> (StatusCode, Json<MResult<Product>>) {
+    let result = Product::get_by_id_from_db(product_id);
     match result {
         Ok(product) => {
             let r = MResult {

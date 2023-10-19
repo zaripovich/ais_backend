@@ -1,13 +1,8 @@
 use crate::{models::order::Order, result::MResult};
-use axum::{http::StatusCode, Json};
-use serde::Deserialize;
-#[derive(Deserialize)]
-pub struct SearchParametrs {
-    pub id: i32,
-}
+use axum::{extract::Path, http::StatusCode, Json};
 
-pub async fn get_order(Json(payload): Json<SearchParametrs>) -> (StatusCode, Json<MResult<Order>>) {
-    let result = Order::get_by_id_from_db(payload.id);
+pub async fn get_order(Path(order_id): Path<i32>) -> (StatusCode, Json<MResult<Order>>) {
+    let result = Order::get_by_id_from_db(order_id);
     match result {
         Ok(order) => {
             let r = MResult {

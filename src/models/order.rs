@@ -1,16 +1,19 @@
 use crate::db::establish_connection;
 use crate::schema::*;
+use axum_login::axum_sessions::async_session::chrono::NaiveDateTime;
+use diesel;
 use diesel::prelude::*;
 use diesel::result::Error;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Selectable, Queryable, AsChangeset, Debug, Clone)]
+#[derive(Serialize, Selectable, Queryable, Debug, Clone)]
 #[diesel(table_name = orders)]
 pub struct Order {
     pub id: i32,
     pub active: bool,
     pub product_id: i32,
     pub table_id: i32,
+    pub created_at: NaiveDateTime,
 }
 
 #[derive(Deserialize, Insertable, Queryable, Debug)]
@@ -19,6 +22,7 @@ pub struct NewOrder {
     pub active: bool,
     pub product_id: i32,
     pub table_id: i32,
+    pub created_at: NaiveDateTime,
 }
 
 impl NewOrder {
