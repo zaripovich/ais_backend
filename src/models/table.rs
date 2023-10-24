@@ -27,6 +27,23 @@ impl MyTable {
             .set(active.eq(_active))
             .execute(connection)
     }
+
+    pub fn paid(_id: i32) -> Result<usize, Error> {
+        let connection = &mut establish_connection();
+        {
+            use crate::schema::tables::dsl::*;
+            if let Err(err) = diesel::update(tables.filter(id.eq(_id)))
+                .set(active.eq(false))
+                .execute(connection)
+            {
+                return Err(err);
+            }
+        }
+        use crate::schema::orders::dsl::*;
+        diesel::update(orders.filter(table_id.eq(_id).and(active.eq(true))))
+            .set(active.eq(false))
+            .execute(connection)
+    }
 }
 
 pub fn get_updates() -> Result<Vec<Table>, Error> {
