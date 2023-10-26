@@ -49,4 +49,11 @@ impl Order {
             .set(active.eq(_active))
             .execute(connection)
     }
+
+    pub fn delete_from_db(_id: i32) -> Result<usize, Error> {
+        use crate::schema::orders::dsl::*;
+        let connection = &mut establish_connection();
+        let response = orders.filter(id.eq(_id));
+        diesel::delete(response).execute(connection)
+    }
 }

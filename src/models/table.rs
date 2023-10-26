@@ -61,11 +61,12 @@ pub fn get_updates() -> Result<Vec<Table>, Error> {
         let active_val: bool = orders_res.len() > 0;
         for order in orders_res {
             use crate::schema::products::dsl::*;
-            let product_res: Product = products
+            let mut product_res: Product = products
                 .filter(id.eq(order.product_id))
                 .select(Product::as_select())
                 .first(connection)
                 .expect("Error loading products");
+            product_res.id = order.id;
             orders_out.push(product_res);
         }
         result.push(Table {
