@@ -1,17 +1,14 @@
-use axum::{http::StatusCode, Json};
+use crate::{models::table::MyTable, result::MResult};
+use axum::{extract::Path, http::StatusCode, Json};
 
-use crate::{models::product::NewProduct, result::MResult};
-pub async fn add_product(Json(payload): Json<NewProduct>) -> (StatusCode, Json<MResult<i32>>) {
-    let product = NewProduct {
-        name: payload.name,
-        price: payload.price,
-    };
-    match product.add_into_db() {
-        Ok(val) => {
+pub async fn paid(Path(table_id): Path<i32>) -> (StatusCode, Json<MResult<String>>) {
+    let result = MyTable::paid(table_id);
+    match result {
+        Ok(_) => {
             let r = MResult {
                 status: StatusCode::OK.as_u16(),
                 description: None,
-                value: Some(val),
+                value: None,
             };
             (StatusCode::OK, Json(r))
         }

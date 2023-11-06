@@ -1,17 +1,15 @@
+use crate::models::table::{self, Table};
+use crate::result::MResult;
 use axum::{http::StatusCode, Json};
 
-use crate::{models::product::NewProduct, result::MResult};
-pub async fn add_product(Json(payload): Json<NewProduct>) -> (StatusCode, Json<MResult<i32>>) {
-    let product = NewProduct {
-        name: payload.name,
-        price: payload.price,
-    };
-    match product.add_into_db() {
-        Ok(val) => {
+pub async fn get_updates() -> (StatusCode, Json<MResult<Vec<Table>>>) {
+    let result = table::get_updates();
+    match result {
+        Ok(table) => {
             let r = MResult {
                 status: StatusCode::OK.as_u16(),
                 description: None,
-                value: Some(val),
+                value: Some(table),
             };
             (StatusCode::OK, Json(r))
         }

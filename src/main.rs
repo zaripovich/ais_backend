@@ -3,7 +3,9 @@ mod handlers;
 mod models;
 mod result;
 mod schema;
-use axum::routing::{delete, get, post, put};
+use std::env;
+
+use axum::routing::{delete, get, patch, post, put};
 use axum::Router;
 use dotenvy::dotenv;
 use handlers::order::set_active::set_active_of_order;
@@ -17,7 +19,8 @@ use tower_http::cors::CorsLayer;
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-
+    let address = env::var("ADDRESS").expect("ADDRESS must be set");
+    let port = env::var("PORT").expect("PORT must be set");
     let app = Router::new()
         .route("/product/add", post(add_product))
         .route("/product/get/all", get(get_all))
@@ -26,11 +29,11 @@ async fn main() {
         .route("/order/get/:order_id", get(get_order))
         .route("/order/delete/:order_id", delete(delete_order))
         .route("/order/set_active", put(set_active_of_order))
-        .route("/table/paid/:table_id", get(paid))
+        .route("/table/paid/:table_id", patch(paid))
         .route("/table/get_updates", get(get_updates))
         .layer(CorsLayer::permissive());
-
-    axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
+    let settings = format!("{}:{}", address, port);
+    axum::Server::bind(&settings.parse().unwrap())
         .serve(app.into_make_service())
         .await
         .unwrap();
