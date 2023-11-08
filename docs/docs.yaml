@@ -1,0 +1,376 @@
+openapi: 3.0.3
+info:
+  title: ais_backend
+  version: 1.0.0
+  contact: {}
+servers:
+- url: http://{ip}:{port}
+paths:
+  /order/get/{id}:
+    get:
+      tags: ['Order']
+      summary: get_order
+      description: Получение заказа через id
+      operationId: get_order
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: 'Id заказа'
+          example: 1
+      responses:
+        200:
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    description: Код ответа
+                    format: int32
+                    example: 200
+                  value:
+                    $ref: "#/components/schemas/order"
+        500:
+          description: 'Ошибка'
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/invalid_res'
+  /order/add:
+    post:
+      tags: ['Order']
+      summary: add_order
+      description: Добавление заказа
+      operationId: add_order
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product_id:
+                  type: number
+                  example: 1
+                table_id:
+                  type: number
+                  example: 1
+            examples:
+              Пример 1:
+                value:
+                  product_id: 1
+                  table_id: 1
+              Пример 2:
+                value:
+                  product_id: 2
+                  table_id: 1
+      responses:
+        200:
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    description: Код ответа
+                    format: int32
+                    example: 200
+        500:
+          description: 'Ошибка'
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/invalid_res'
+  /order/set_active:
+    put:
+      tags: ['Order']
+      summary: set_active
+      description: Установление флага активности
+      operationId: setActive
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                active:
+                  type: boolean
+                  example: false
+                id:
+                  type: number
+                  example: 1
+            examples:
+              set_active:
+                value:
+                  active: false
+                  id: 1
+      responses:
+        200:
+          description: 'Успешно'
+        500:
+          description: 'Ошибка'
+  /order/delete/{id}:
+    delete:
+      tags: ['Order']
+      summary: delete_order
+      description: Удаление заказа
+      operationId: delete_order
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: 'Id заказа'
+          example: 1
+      responses:
+        200:
+          description: 'Успешно'
+        500:
+          description: 'Ошибка'
+    
+  /product/get/{id}:
+    get:
+      tags: ['Product']
+      summary: get
+      description: Получение продукта по его id
+      operationId: get
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: 'Id продукта'
+          example: 1
+      responses:
+        200:
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    description: Код ответа
+                    format: int32
+                    example: 200
+                  value:
+                    type: object
+                    description: Возвращяемое значение
+                    $ref: "#/components/schemas/product"
+        500:
+          description: 'Ошибка'
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/invalid_res'
+  /product/get/all:
+    get:
+      tags: ['Product']
+      summary: get_all
+      description: Получение всех продуктов
+      operationId: get_all
+      responses:
+        200:
+          description: 'Успешно'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    description: Код ответа
+                    format: int32
+                    example: 200
+                  value:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/product"
+        500:
+          description: 'Ошибка'
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/invalid_res'
+  /product/add:
+    post:
+      tags: ['Product']
+      summary: add
+      description: add
+      operationId: add
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Лютый кефир номер 3
+                price:
+                  type: number
+                  example: 1000
+            examples:
+              add:
+                value:
+                  name: Лютый кефир номер 3
+                  price: 1000
+      responses:
+        200:
+          description: ''
+        500:
+          description: 'Ошибка'
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/invalid_res'
+  /table/get_updates:
+    get:
+      tags: ['Table']
+      summary: get_updates
+      description: Получение информации о столах
+      operationId: getUpdates
+      responses:
+        '200':
+          description: 'Успешно'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    description: Код ответа
+                    format: int32
+                    example: 200
+                  value:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/table"
+  /table/paid/{id}:
+    patch:
+      tags: ['Table']
+      summary: paid
+      description: 'Оплата стола и его освобождение'
+      operationId: paid
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: 'Id стола'
+          example: 1
+      responses:
+        200:
+          description: 'Успешно'
+        500:
+          description: 'Ошибка'
+tags: [
+  name: Order,
+  name: Table,
+  name: Product
+]
+
+components:
+  schemas:
+    table: 
+      title: 'Стол'
+      type: object
+      properties:
+        id: 
+          type: number
+          description: 'Id стола'
+          example: 1
+        active:
+          type: boolean
+          description: 'Статус заказа'
+          example: true
+        orders:
+          type: array
+          description: 'Заказы'
+          items:
+            $ref: "#/components/schemas/order_product"
+            
+
+    order: 
+      title: 'Заказ'
+      type: object
+      properties:
+        id:
+          type: number
+          description: 'Id заказа'
+          example: 1
+        active:
+          type: boolean
+          description: 'Статус заказа'
+          example: true
+        product_id:
+          type: number
+          description: 'Id продукта'
+          example: 1
+        table_id: 
+          type: number
+          description: 'Id стола'
+          example: 1
+        created_at:
+          type: string
+          description: 'Время добавления заказа'
+          example: "2023-11-08T03:26:58.037104"
+    order_product: 
+      title: 'Заказанный продукт'
+      type: object
+      properties:
+        id: 
+          type: number
+          description: 'Id заказа'
+          example: 1
+        name:
+          type: string
+          description: 'Имя продукта'
+          example: 'Пиво'
+        price:
+          type: number
+          description: Цена продукта
+          example: 1000
+    product:
+      title: 'Продукт'
+      type: object
+      properties:
+        id: 
+          type: number
+          description: 'Id продукта'
+          example: 1
+        name:
+          type: string
+          description: 'Имя продукта'
+          example: 'Пиво'
+        price:
+          type: number
+          description: Цена продукта
+          example: 1000
+    invalid_res:
+      title: 'Ошибка'
+      type: object
+      properties:
+        status:
+          type: integer
+          description: 'Код ответа'
+          format: int32
+          example: 500
+        description:
+          type: string
+          description: Описание ошибки
+          example: Record not found
+
+
+    
