@@ -15,6 +15,7 @@ use handlers::product::{add_product::add_product, get_product::get_product};
 use handlers::table::get_updates::get_updates;
 use handlers::table::paid::paid;
 use tower_http::cors::CorsLayer;
+use tower_http::trace::TraceLayer;
 
 #[tokio::main]
 async fn main() {
@@ -31,6 +32,7 @@ async fn main() {
         .route("/order/set_active", put(set_active_of_order))
         .route("/table/paid/:table_id", patch(paid))
         .route("/table/get_updates", get(get_updates))
+        .layer(TraceLayer::new_for_http())
         .layer(CorsLayer::permissive());
     let settings = format!("{}:{}", address, port);
     axum::Server::bind(&settings.parse().unwrap())
