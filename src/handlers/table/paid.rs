@@ -22,3 +22,20 @@ pub async fn paid(Path(table_id): Path<i32>) -> (StatusCode, Json<MResult<String
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use crate::handlers::table::paid::paid;
+    use axum::extract::Path;
+    use axum::http::StatusCode;
+    use dotenvy::dotenv;
+
+    #[tokio::test]
+    async fn test_table_paid() {
+        dotenv().ok();
+
+        let paid_result = paid(Path(1)).await;
+        assert!(StatusCode::OK == paid_result.0, "Не удалось оплатить стол");
+    }
+}

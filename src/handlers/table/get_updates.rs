@@ -23,3 +23,20 @@ pub async fn get_updates() -> (StatusCode, Json<MResult<Vec<Table>>>) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::handlers::table::get_updates::get_updates;
+    use axum::http::StatusCode;
+    use dotenvy::dotenv;
+
+    #[tokio::test]
+    async fn test_get_updates() {
+        dotenv().ok();
+        let get_updates_result = get_updates().await;
+        assert!(
+            StatusCode::OK == get_updates_result.0 && get_updates_result.1.value.clone().is_some(),
+            "Не удалось получить обновления"
+        );
+    }
+}

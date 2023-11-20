@@ -22,3 +22,21 @@ pub async fn get_all() -> (StatusCode, Json<MResult<Vec<Product>>>) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use crate::handlers::product::get_all::get_all;
+    use axum::http::StatusCode;
+    use dotenvy::dotenv;
+
+    #[tokio::test]
+    async fn test_get_all_product() {
+        dotenv().ok();
+        let get_results = get_all().await;
+        assert!(
+            StatusCode::OK == get_results.0 && get_results.1.value.clone().is_some(),
+            "Не удалось получить все продукты"
+        );
+    }
+}
