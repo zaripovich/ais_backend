@@ -1,9 +1,9 @@
 use crate::{models::product::Product, result::MResult};
-use axum::{http::StatusCode, Json};
+use axum::{extract::State, http::StatusCode, Json};
+use deadpool_diesel::postgres::Pool;
 
-pub async fn get_all() -> (StatusCode, Json<MResult<Vec<Product>>>) {
-    let result = Product::get_all_from_db();
-    match result {
+pub async fn get_all(State(pool): State<Pool>) -> (StatusCode, Json<MResult<Vec<Product>>>) {
+    match Product::get_all_from_db(pool).await {
         Ok(products) => {
             let r = MResult {
                 status: StatusCode::OK.as_u16(),
@@ -26,14 +26,22 @@ pub async fn get_all() -> (StatusCode, Json<MResult<Vec<Product>>>) {
 #[cfg(test)]
 mod tests {
 
+    use std::env;
+
     use crate::handlers::product::get_all::get_all;
-    use axum::http::StatusCode;
+    use axum::{extract::State, http::StatusCode};
+    use deadpool_diesel::postgres::{Manager, Pool, Runtime};
     use dotenvy::dotenv;
 
     #[tokio::test]
     async fn test_get_all_product() {
         dotenv().ok();
-        let get_results = get_all().await;
+        let manager = Manager::new(
+            env::var("DATABASE_URL").expect("PORT must be set"),
+            Runtime::Tokio1,
+        );
+        let pool = Pool::builder(manager).max_size(8).build().unwrap();
+        let get_results = get_all(State(pool)).await;
         assert!(
             StatusCode::OK == get_results.0 && get_results.1.value.clone().is_some(),
             "Не удалось получить все продукты"

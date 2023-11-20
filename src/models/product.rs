@@ -1,7 +1,6 @@
-use crate::db::establish_connection;
 use crate::schema::*;
+use deadpool_diesel::postgres::Pool;
 use diesel::prelude::*;
-use diesel::result::Error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Selectable, Queryable, AsChangeset, Debug, Clone)]
@@ -20,33 +19,55 @@ pub struct NewProduct {
 }
 
 impl NewProduct {
-    pub fn add_into_db(&self) -> Result<i32, Error> {
+    pub async fn add_into_db(
+        pool: Pool,
+        product: NewProduct,
+    ) -> Result<i32, Box<dyn std::error::Error>> {
         use crate::schema::products::dsl::*;
-        let connection = &mut establish_connection();
-        diesel::insert_into(products)
-            .values(self)
-            .returning(id)
-            .get_result(connection)
+
+        let connection = pool.get().await?;
+        let result = connection
+            .interact(move |connection| {
+                let query = diesel::insert_into(products).values(product).returning(id);
+                query.get_result::<i32>(connection)
+            })
+            .await??;
+        Ok(result)
     }
 }
 
 impl Product {
-    pub fn get_by_id_from_db(_id: i32) -> Result<Product, Error> {
+    pub async fn get_by_id_from_db(
+        pool: Pool,
+        _id: i32,
+    ) -> Result<Product, Box<dyn std::error::Error>> {
         use crate::schema::products::dsl::*;
-        let connection = &mut establish_connection();
-        products.filter(id.eq(_id)).first(connection)
+        let connection = pool.get().await?;
+        let result = connection
+            .interact(move |connection| {
+                let query = products.filter(id.eq(_id));
+                query.get_result::<Product>(connection)
+            })
+            .await??;
+        Ok(result)
     }
 
-    pub fn get_all_from_db() -> Result<Vec<Product>, Error> {
+    pub async fn get_all_from_db(pool: Pool) -> Result<Vec<Product>, Box<dyn std::error::Error>> {
         use crate::schema::products::dsl::*;
-        let connection = &mut establish_connection();
-        products.select(Product::as_select()).load(connection)
+        let connection = pool.get().await?;
+        let result = connection
+            .interact(move |connection| {
+                let query = products.select(Product::as_select());
+                query.get_results::<Product>(connection)
+            })
+            .await??;
+        Ok(result)
     }
 
-    pub fn update_into_db(&self) -> Result<usize, Error> {
+    /* pub async fn update_into_db(pool: Pool, value: NewProduct) -> Result<usize, Error> {
         use crate::schema::products::dsl::*;
         let connection = &mut establish_connection();
         let response = products.filter(id.eq(self.id));
         diesel::update(response).set(self).execute(connection)
-    }
+    } */
 }

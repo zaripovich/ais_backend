@@ -1,9 +1,7 @@
-use crate::db::establish_connection;
 use crate::schema::*;
 use chrono::naive::NaiveDateTime;
-use diesel;
+use deadpool_diesel::postgres::Pool;
 use diesel::prelude::*;
-use diesel::result::Error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Selectable, Queryable, Debug, Clone)]
@@ -26,36 +24,47 @@ pub struct NewOrder {
 }
 
 impl NewOrder {
-    pub fn add_into_db(&self) -> Result<i32, Error> {
+    pub async fn add_into_db(
+        pool: Pool,
+        order: NewOrder,
+    ) -> Result<i32, Box<dyn std::error::Error>> {
         use crate::schema::orders::dsl::*;
-        let connection = &mut establish_connection();
-        diesel::insert_into(orders)
-            .values(self)
-            .returning(id)
-            .get_result(connection)
+        let connection = pool.get().await?;
+        let result = connection
+            .interact(move |connection| {
+                let query = diesel::insert_into(orders).values(order).returning(id);
+                query.get_result::<i32>(connection)
+            })
+            .await??;
+        Ok(result)
     }
 }
 
 impl Order {
-    pub fn get_by_id_from_db(_id: i32) -> Result<Order, Error> {
+    pub async fn get_by_id_from_db(
+        pool: Pool,
+        _id: i32,
+    ) -> Result<Order, Box<dyn std::error::Error>> {
         use crate::schema::orders::dsl::*;
-        let connection = &mut establish_connection();
-        orders.filter(id.eq(_id)).first(connection)
+        let connection = pool.get().await?;
+        let result = connection
+            .interact(move |connection| {
+                let query = orders.filter(id.eq(_id));
+                query.get_result::<Order>(connection)
+            })
+            .await??;
+        Ok(result)
     }
 
-    pub fn update_into_db(_id: i32, _active: bool) -> Result<usize, Error> {
+    pub async fn delete_from_db(pool: Pool, _id: i32) -> Result<usize, Box<dyn std::error::Error>> {
         use crate::schema::orders::dsl::*;
-        let connection = &mut establish_connection();
-        let response = orders.filter(id.eq(_id));
-        diesel::update(response)
-            .set(active.eq(_active))
-            .execute(connection)
-    }
-
-    pub fn delete_from_db(_id: i32) -> Result<usize, Error> {
-        use crate::schema::orders::dsl::*;
-        let connection = &mut establish_connection();
-        let response = orders.filter(id.eq(_id));
-        diesel::delete(response).execute(connection)
+        let connection = pool.get().await?;
+        let result = connection
+            .interact(move |connection| {
+                let query = diesel::delete(orders.filter(id.eq(_id)));
+                query.execute(connection)
+            })
+            .await??;
+        Ok(result)
     }
 }

@@ -1,8 +1,8 @@
 use crate::models::order::Order;
+use crate::models::product::Product;
 use crate::schema::*;
-use crate::{db::establish_connection, models::product::Product};
+use deadpool_diesel::postgres::Pool;
 use diesel::prelude::*;
-use diesel::result::Error;
 use serde::Serialize;
 
 #[derive(Serialize, Selectable, Queryable, AsChangeset, Debug)]
@@ -20,52 +20,71 @@ pub struct Table {
 }
 
 impl MyTable {
-    pub fn update_active_status(_id: i32, _active: bool) -> Result<usize, Error> {
+    pub async fn update_active_status(
+        pool: Pool,
+        _id: i32,
+        _active: bool,
+    ) -> Result<usize, Box<dyn std::error::Error>> {
         use crate::schema::tables::dsl::*;
-        let connection = &mut establish_connection();
-        diesel::update(tables.filter(id.eq(_id)))
-            .set(active.eq(_active))
-            .execute(connection)
+        let connection = pool.get().await?;
+        let result = connection
+            .interact(move |connection| {
+                let query = diesel::update(tables.filter(id.eq(_id))).set(active.eq(_active));
+                query.execute(connection)
+            })
+            .await??;
+        Ok(result)
     }
 
-    pub fn paid(_id: i32) -> Result<usize, Error> {
-        let connection = &mut establish_connection();
-        {
-            use crate::schema::tables::dsl::*;
-            if let Err(err) = diesel::update(tables.filter(id.eq(_id)))
-                .set(active.eq(false))
-                .execute(connection)
-            {
-                return Err(err);
-            }
-        }
-        use crate::schema::orders::dsl::*;
-        diesel::update(orders.filter(table_id.eq(_id).and(active.eq(true))))
-            .set(active.eq(false))
-            .execute(connection)
+    pub async fn paid(pool: Pool, _id: i32) -> Result<usize, Box<dyn std::error::Error>> {
+        let connection = pool.get().await?;
+        let result_1 = connection
+            .interact(move |connection| {
+                use crate::schema::tables::dsl::*;
+                let query = diesel::update(tables.filter(id.eq(_id))).set(active.eq(false));
+                query.execute(connection)
+            })
+            .await?;
+        if let Err(err) = result_1 {
+            return Err(Box::new(err));
+        };
+        let result = connection
+            .interact(move |connection| {
+                use crate::schema::orders::dsl::*;
+                let query = diesel::update(orders.filter(table_id.eq(_id).and(active.eq(true))))
+                    .set(active.eq(false));
+                query.execute(connection)
+            })
+            .await??;
+        Ok(result)
     }
 }
 
-pub fn get_updates() -> Result<Vec<Table>, Error> {
+pub async fn get_updates(pool: Pool) -> Result<Vec<Table>, Box<dyn std::error::Error>> {
     let mut result: Vec<Table> = vec![];
-    use crate::schema::orders::dsl::*;
-
-    let connection = &mut establish_connection();
+    let connection = pool.get().await?;
     for i in 1..7 {
-        let orders_res: Vec<Order> = orders
-            .filter(active.eq(true).and(table_id.eq(i)))
-            .select(Order::as_select())
-            .load(connection)
-            .expect("Error loading orders");
+        let orders_res = connection
+            .interact(move |connection| {
+                use crate::schema::orders::dsl::*;
+                let query = orders
+                    .filter(active.eq(true).and(table_id.eq(i)))
+                    .select(Order::as_select());
+                query.get_results::<Order>(connection)
+            })
+            .await??;
         let mut orders_out: Vec<Product> = vec![];
         let active_val: bool = orders_res.len() > 0;
         for order in orders_res {
             use crate::schema::products::dsl::*;
-            let mut product_res: Product = products
-                .filter(id.eq(order.product_id))
-                .select(Product::as_select())
-                .first(connection)
-                .expect("Error loading products");
+            let mut product_res: Product = connection
+                .interact(move |connection| {
+                    let query = products
+                        .filter(id.eq(order.product_id))
+                        .select(Product::as_select());
+                    query.get_result::<Product>(connection)
+                })
+                .await??;
             product_res.id = order.id;
             orders_out.push(product_res);
         }

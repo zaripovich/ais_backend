@@ -1,9 +1,16 @@
 use crate::{models::table::MyTable, result::MResult};
-use axum::{extract::Path, http::StatusCode, Json};
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    Json,
+};
+use deadpool_diesel::postgres::Pool;
 
-pub async fn paid(Path(table_id): Path<i32>) -> (StatusCode, Json<MResult<String>>) {
-    let result = MyTable::paid(table_id);
-    match result {
+pub async fn paid(
+    State(pool): State<Pool>,
+    Path(table_id): Path<i32>,
+) -> (StatusCode, Json<MResult<String>>) {
+    match MyTable::paid(pool, table_id).await {
         Ok(_) => {
             let r = MResult {
                 status: StatusCode::OK.as_u16(),
@@ -26,16 +33,22 @@ pub async fn paid(Path(table_id): Path<i32>) -> (StatusCode, Json<MResult<String
 #[cfg(test)]
 mod tests {
 
-    use crate::handlers::table::paid::paid;
-    use axum::extract::Path;
-    use axum::http::StatusCode;
-    use dotenvy::dotenv;
+    use std::env;
 
+    use crate::handlers::table::paid::paid;
+    use axum::extract::{Path, State};
+    use axum::http::StatusCode;
+    use deadpool_diesel::postgres::{Manager, Pool, Runtime};
+    use dotenvy::dotenv;
     #[tokio::test]
     async fn test_table_paid() {
         dotenv().ok();
-
-        let paid_result = paid(Path(1)).await;
+        let manager = Manager::new(
+            env::var("DATABASE_URL").expect("PORT must be set"),
+            Runtime::Tokio1,
+        );
+        let pool = Pool::builder(manager).max_size(8).build().unwrap();
+        let paid_result = paid(State(pool), Path(1)).await;
         assert!(StatusCode::OK == paid_result.0, "Не удалось оплатить стол");
     }
 }
