@@ -3,6 +3,7 @@ mod handlers;
 mod models;
 mod result;
 mod schema;
+mod tests;
 use std::env;
 
 use axum::routing::{delete, get, patch, post, put};
